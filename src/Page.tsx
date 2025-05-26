@@ -1,532 +1,13 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { FFmpeg } from '@ffmpeg/ffmpeg'
-import { fetchFile } from '@ffmpeg/util'
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { fetchFile } from '@ffmpeg/util';
+import { ESPLoader, type FlashOptions, type LoaderOptions, Transport } from 'esptool-js';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { serial } from "web-serial-polyfill";
 
 type Color = [number, number, number];
 type Grid = Color[][];
 
-const disconnectedFrames = [
-  [
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ]
-  ],
-  [
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      68,
-      73,
-      247
-    ],
-    [
-      0,
-      0,
-      0
-    ]
-  ],
-  [
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      68,
-      74,
-      247
-    ],
-    [
-      0,
-      0,
-      0
-    ]
-  ],
-  [
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      255,
-      255,
-      254
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      255,
-      254,
-      254
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ]
-  ],
-  [
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ]
-  ],
-  [
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ]
-  ],
-  [
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      254,
-      254,
-      255
-    ],
-    [
-      254,
-      254,
-      254
-    ],
-    [
-      255,
-      255,
-      255
-    ],
-    [
-      254,
-      255,
-      254
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ]
-  ],
-  [
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      255,
-      254,
-      254
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      254,
-      254,
-      255
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ]
-  ],
-  [
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ]
-  ],
-  [
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0
-    ]
-  ]
-]
+const disconnectedFrames = [[[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [68, 73, 247], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [68, 74, 247], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0], [255, 255, 254], [0, 0, 0], [0, 0, 0], [255, 254, 254], [0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0], [254, 254, 255], [254, 254, 254], [255, 255, 255], [254, 255, 254], [0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [255, 254, 254], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [254, 254, 255], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]];
 
 interface FrameGenerator {
   init?(setLoadingProgress: (percentage: number) => void): Promise<void>;
@@ -761,28 +242,60 @@ export default function Page() {
   const [frames, setFrames] = useState<Grid[]>([]);
   const [previewIndex, setPreviewIndex] = useState<number>(0);
   const intervalRef = useRef<number | undefined>(undefined);
-  const [badgeColor, setBadgeColor] = useState<boolean>(true);
+  const [badgeColor, setBadgeColorInternal] = useState<boolean>(true);
   const [loadingProgress, setLoadingProgress] = useState<number>(0);
   const [badgeConnected, setBadgeConnected] = useState<boolean>(false);
+  const [legacyFirmware, setLegacyFirmware] = useState<boolean>(false);
+  const [flashConnecting, setFlashConnecting] = useState<boolean>(false);
+  const [flashError, setFlashError] = useState<string | null>(null);
+  const [flashFlashing, setFlashFlashing] = useState<boolean>(false);
+  const [flashSuccess, setFlashSuccess] = useState<boolean>(false);
+  const [flashProgress, setFlashProgress] = useState<number>(0);
 
   useEffect(() => {
     let inProgress = false;
+
+    async function checkLegacyFirmware() {
+      try {
+        const res = await fetch('http://192.168.4.1/api/v1/system/info', {
+          method: 'GET',
+          cache: 'no-store',
+          redirect: 'manual',
+        });
+        if (res.status === 200) {
+          setLegacyFirmware(true);
+        }
+        setBadgeConnected(false);
+      } catch (e) {
+        console.error('Error checking legacy firmware', e);
+        setBadgeConnected(false);
+      }
+    }
+
+
     async function checkConnection() {
       if (inProgress) return;
       inProgress = true;
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 3000);
-        const res = await fetch('http://192.168.4.1/api/v1/projects', {
+        const res = await fetch('http://192.168.4.1/api/v1/ping', {
           method: 'GET',
           cache: 'no-store',
           signal: controller.signal,
           redirect: 'manual',
         });
         clearTimeout(timeout);
-        setBadgeConnected(res.status === 200);
+        if (res.status === 200) {
+          setBadgeConnected(true);
+          setLegacyFirmware(false);
+          return
+        }
       } catch {
         setBadgeConnected(false);
+        if (!legacyFirmware) {
+          await checkLegacyFirmware();
+        }
       } finally {
         inProgress = false;
       }
@@ -790,7 +303,7 @@ export default function Page() {
     checkConnection();
     const interval = window.setInterval(checkConnection, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [legacyFirmware]);
 
   const setChoice = (value: string) => {
     window.localStorage.setItem('choice', value);
@@ -837,6 +350,18 @@ export default function Page() {
     const storedBg = window.localStorage.getItem('bg');
     if (storedBg) {
       setBgInternal(storedBg);
+    }
+  }, []);
+
+  const setBadgeColor = (value: boolean) => {
+    window.localStorage.setItem('badgeColor', value ? 'true' : 'false');
+    setBadgeColorInternal(value);
+  }
+
+  useEffect(() => {
+    const storedBadgeColor = window.localStorage.getItem('badgeColor');
+    if (storedBadgeColor) {
+      setBadgeColorInternal(storedBadgeColor === 'true');
     }
   }, []);
 
@@ -921,226 +446,414 @@ export default function Page() {
     }
     setPreviewIndex(0);
   }
+  async function flashFirmware() {
+    if (!legacyFirmware) return;
+
+    setFlashConnecting(true);
+    try {
+      const serialLib = !navigator.serial && navigator.usb ? serial : navigator.serial;
+      const portFilters: { usbVendorId?: number, usbProductId?: number }[] = [
+        { usbProductId: 29987, usbVendorId: 6790 }
+      ];
+
+      const port = await serialLib.requestPort({ filters: portFilters });
+      const transport = new Transport(port, true);
+
+      const loaderOptions = {
+        transport,
+        baudrate: 460800,
+      } as LoaderOptions;
+
+      const loader = new ESPLoader(loaderOptions);
+
+      let chip;
+      for (let i = 0; i < 10; i++) {
+        try {
+          chip = await loader.main();
+          break;
+        } catch (e) {
+          console.error('Error connecting to badge', e);
+          if (i === 9) {
+            setFlashError('Failed to connect to badge. Make sure it is in flashing mode.');
+            setFlashConnecting(false);
+            return;
+          }
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+
+      console.log('Connected to badge', chip);
+
+      setFlashError(null);
+      setFlashSuccess(false);
+      setFlashFlashing(true);
+      setFlashConnecting(false);
+
+      const flashSize = Math.floor(await loader.getFlashSize() / 1024);
+      console.log('Flash size:', flashSize, 'MB');
+      if (flashSize != 16) {
+        setFlashError('You are using PHDays 2 Badge. It is not supported (yet).');
+        setFlashFlashing(false);
+        return;
+      }
+
+      const response = await fetch('/phdays-badge-pro.bin');
+      if (!response.ok) {
+        throw new Error('Failed to fetch firmware file');
+      }
+      const firmwareBlob = await response.blob();
+      const arrayBuffer = await firmwareBlob.arrayBuffer();
+      const uint8 = new Uint8Array(arrayBuffer);
+      const unicodeString = Array.from(uint8, byte => String.fromCharCode(byte)).join('');
+
+      console.log('Firmware unicode string:', unicodeString.slice(0, 100));
+
+      const flashOptions2: FlashOptions = {
+        fileArray: [
+          {
+            address: 0x0,
+            data: unicodeString,
+          }
+        ],
+        flashSize: "16MB",
+        flashMode: "dio",
+        flashFreq: "80m",
+        eraseAll: true,
+        compress: true,
+        reportProgress: (fileIndex, written, total) => {
+          const percent = ((written / total) * 100).toFixed(1);
+          setFlashProgress(parseFloat(percent));
+        }
+      };
+
+      await loader.writeFlash(flashOptions2);
+
+      await transport.setDTR(false);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      await transport.setDTR(true);
+
+      console.log('Firmware flashed successfully');
+      setFlashSuccess(true);
+    } catch (e) {
+      console.error('Flashing failed', e);
+      setFlashError('Flashing failed. See console for details.');
+    } finally {
+      setFlashConnecting(false);
+      setFlashFlashing(false);
+    }
+  }
+
+
 
   return (
     <div className="min-h-screen w-screen bg-[#111] flex items-center justify-center font-sans text-white gap-16 flex-col md:flex-row px-4 md:px-0">
-      <div className="rounded-2xl p-8 min-w-[320px] flex flex-col gap-6 bg-gradient-to-br from-[#111214] to-[#0c0d0f] border-t border-r border-l border-white/5 shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.1),0_2px_40px_10px_rgba(154,170,255,0.05),0_0_16px_-7px_rgba(154,170,255,0.05)] w-full md:w-auto">
-        <div>
-          <label className="font-semibold text-lg mb-2 block">Mode</label>
-          <div className="flex gap-2 text-xs">
-            <button
-              type="button"
-              className={`cursor-pointer flex-1 px-3 py-2 rounded-lg border outline-none transition ${choice === '1'
-                ? 'bg-lime-600 text-white border-lime-600'
-                : 'bg-[#232526] text-white border-[#444] hover:bg-[#282a2c]'
-                }`}
-              onClick={() => setChoice('1')}
-            >
-              Swirl
-            </button>
-            <button
-              type="button"
-              className={`cursor-pointer flex-1 px-3 py-2 rounded-lg border outline-none transition ${choice === '2'
-                ? 'bg-lime-600 text-white border-lime-600'
-                : 'bg-[#232526] text-white border-[#444] hover:bg-[#282a2c]'
-                }`}
-              onClick={() => setChoice('2')}
-            >
-              Scrolling&nbsp;Text
-            </button>
-            <button
-              type="button"
-              className={`cursor-pointer flex-1 px-3 py-2 rounded-lg border outline-none transition ${choice === '3'
-                ? 'bg-lime-600 text-white border-lime-600'
-                : 'bg-[#232526] text-white border-[#444] hover:bg-[#282a2c]'
-                }`}
-              onClick={() => setChoice('3')}
-            >
-              Photo
-            </button>
-            <button
-              type="button"
-              className={`cursor-pointer flex-1 px-3 py-2 rounded-lg border outline-none transition ${choice === '4'
-                ? 'bg-lime-600 text-white border-lime-600'
-                : 'bg-[#232526] text-white border-[#444] hover:bg-[#282a2c]'
-                }`}
-              onClick={() => setChoice('4')}
-            >
-              Video
-            </button>
-          </div>
-        </div>
-        {choice === '2' && (
-          <div className="flex flex-col gap-3">
-            <label className="font-medium">Text</label>
-            <input
-              value={text}
-              onChange={e => setText(e.target.value)}
-              placeholder="Text"
-              className="px-3 py-2 rounded-lg border border-[#444] bg-[#232526] text-white text-base outline-none"
-            />
-            <div className="flex gap-3">
-              <div>
-                <label className="text-xs font-medium">Foreground</label>
-                <div
-                  className="inline-block ml-2 w-4 h-4 rounded-full border border-white/30 cursor-pointer align-middle"
-                  style={{ backgroundColor: fg }}
-                  onClick={() => {
-                    const input = document.getElementById('fg-color-input');
-                    if (input) (input as HTMLInputElement).click();
-                  }}
-                  title="Change text color"
-                />
-                <input
-                  id="fg-color-input"
-                  type="color"
-                  value={fg}
-                  onChange={e => setFg(e.target.value)}
-                  className="hidden"
-                  tabIndex={-1}
-                />
+      <div className="rounded-2xl p-8 min-w-[320px] text-sm flex flex-col gap-6 bg-gradient-to-br from-[#111214] to-[#0c0d0f] border-t border-r border-l border-white/5 shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.1),0_2px_40px_10px_rgba(154,170,255,0.05),0_0_16px_-7px_rgba(154,170,255,0.05)] w-full md:w-auto">
+        {legacyFirmware && (
+          <div>
+            <div className="text-lg font-semibold mb-2">Legacy Firmware Detected</div>
+            <div className="text-sm text-white/70 mb-4">
+              You will need to install the unofficial firmware to use this website.
+            </div>
+            {flashError && (
+              <div className="text-red-500 mb-4">
+                {flashError}
               </div>
-              <div>
-                <label className="text-xs font-medium">Background</label>
-                <div
-                  className="inline-block ml-2 w-4 h-4 rounded-full border border-white/30 cursor-pointer align-middle"
-                  style={{ backgroundColor: bg }}
-                  onClick={() => {
-                    const input = document.getElementById('bg-color-input');
-                    if (input) (input as HTMLInputElement).click();
-                  }}
-                  title="Change background color"
-                />
-                <input
-                  id="bg-color-input"
-                  type="color"
-                  value={bg}
-                  onChange={e => setBg(e.target.value)}
-                  className="hidden"
-                  tabIndex={-1}
-                />
+            )}
+            {flashSuccess && (
+              <div className="text-green-500 mb-4">
+                Firmware flashed successfully!
               </div>
-            </div>
-          </div>
-        )}
-        {choice === '3' && (
-          <div
-            className="flex flex-col gap-1"
-            onDragOver={e => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-            onDrop={e => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                setPhotoFile(e.dataTransfer.files[0]);
-              }
-            }}
-          >
-            <label className="font-medium">Photo</label>
-            <label
-              htmlFor="photo-upload"
-              className="mt-2 flex items-center justify-center border border-dashed border-[#444] rounded-lg py-6 bg-[#232526] text-white cursor-pointer transition hover:bg-[#282a2c] text-center"
-              style={{ minHeight: 80 }}
-            >
-              {photoFile ? (
-                <span className="truncate w-full px-4">{photoFile.name}</span>
-              ) : (
-                <span>Select the photo or drop it here</span>
-              )}
-            </label>
-            <input
-              id="photo-upload"
-              type="file"
-              accept="image/*"
-              onChange={e => setPhotoFile(e.target.files![0])}
-              className="hidden"
-            />
-          </div>
-        )}
-        {choice === '4' && (
-          <div
-            className="flex flex-col gap-1"
-            onDragOver={e => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-            onDrop={e => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                setVideoFile(e.dataTransfer.files[0]);
-              }
-            }}
-          >
-            <label className="font-medium">Video</label>
-            <label
-              htmlFor="video-upload"
-              className="mt-2 flex items-center justify-center border border-dashed border-[#444] rounded-lg py-6 bg-[#232526] text-white cursor-pointer transition hover:bg-[#282a2c] text-center"
-              style={{ minHeight: 80 }}
-            >
-              {videoFile ? (
-                <span className="truncate w-full px-4">{videoFile.name}</span>
-              ) : (
-                <span>Select the video or drop it here</span>
-              )}
-            </label>
-            <input
-              id="video-upload"
-              type="file"
-              accept="video/*"
-              onChange={e => setVideoFile(e.target.files![0])}
-              className="hidden"
-            />
-          </div>
-        )}
-        {loadingProgress > 0 && loadingProgress < 100 && (
-          <div className="w-full flex flex-col gap-1">
-            <div className="text-xs text-white/70 font-medium">Loading: {loadingProgress}%</div>
-            <div className="w-full h-2 bg-[#222] rounded">
-              <div
-                className="h-2 bg-blue-500 rounded transition-all"
-                style={{ width: `${loadingProgress}%` }}
-              />
-            </div>
-          </div>
-        )}
-        {loadingProgress === -1 && (
-          <div className="w-full flex flex-col gap-1 items-center">
-            <div className="text-xs text-white/70 font-medium mb-1">Doing ffmpeg magic...</div>
-            <div className="w-full h-2 bg-[#222] rounded overflow-hidden relative">
-              <div
-                className="absolute h-2 bg-blue-500 rounded"
-                style={{
-                  width: '30%',
-                  left: 0,
-                  animation: 'bounce-loading 1.2s cubic-bezier(.4,0,.2,1) infinite'
-                }}
-              />
-            </div>
-            <style>{`
-              @keyframes bounce-loading {
-              0% { left: 0; }
-              50% { left: 70%; }
-              100% { left: 0; }
-              }
-            `}</style>
-          </div>
-        )}
-        <button
-          onClick={sendToBadge}
-          disabled={!badgeConnected}
-          className={`flex flex-row gap-2 items-center justify-center min-h-9 px-3 py-2 text-sm font-medium font-inter leading-4 tracking-wide whitespace-nowrap border-none rounded-lg transition
+            )}
+            {flashFlashing && (
+              <>
+                {flashProgress === 0 ? (
+                  <>
+                    <div className="text-yellow-500 mb-4">
+                      Erasing flash...
+                    </div>
+                    <div className="w-full h-1 bg-neutral-700 rounded-full mb-4 overflow-hidden relative">
+                      <div
+                        className="absolute h-1 bg-lime-600 rounded-full"
+                        style={{
+                          width: '30%',
+                          left: 0,
+                          animation: 'bounce-loading 1.2s cubic-bezier(.4,0,.2,1) infinite'
+                        }}
+                      />
+                    </div>
+                    <style>{`
+                      @keyframes bounce-loading {
+                        0% { left: 0; }
+                        50% { left: 70%; }
+                        100% { left: 0; }
+                      }
+                    `}</style>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-yellow-500 mb-4">
+                      Flashing... {flashProgress}%
+                    </div>
+                    <div className="w-full bg-neutral-700 rounded-full h-1 mb-4">
+                      <div
+                        className="bg-lime-600 h-1 rounded-full"
+                        style={{ width: `${flashProgress}%` }}
+                      />
+                    </div>
+                  </>
+                )}
+
+                <div className="text-sm text-red-500 font-semibold mb-4">
+                  Do not disconnect the badge.
+                </div>
+              </>
+            )}
+            {flashConnecting && (
+              <div className="text-yellow-500 mb-4">
+                Connecting to badge...
+              </div>
+            )}
+            {!flashFlashing && !flashSuccess && !flashConnecting && (
+              <div className="text-sm text-red-500 mb-4">
+                The official firmware will be replaced.
+              </div>
+            )}
+            <button
+              onClick={flashSuccess ? () => setLegacyFirmware(false) : flashFirmware}
+              disabled={!flashSuccess && (flashConnecting || flashFlashing)}
+              className={`flex flex-row gap-2 items-center justify-center min-h-9 px-3 py-2 text-sm font-medium font-inter leading-4 tracking-wide whitespace-nowrap border-none rounded-lg transition
             active:shadow-[inset_0_-1px_0.4px_0_rgba(0,0,0,0.2),inset_0_1px_0.4px_0_#fff,0_0_0_2px_rgba(0,0,0,0.5),0_0_14px_0_hsla(0,0%,100%,0.19)]
             hover:shadow-[inset_0_-1px_0.4px_0_rgba(0,0,0,0.2),inset_0_1px_0.4px_0_#fff,0_0_0_2px_rgba(0,0,0,0.5),0_0_14px_0_hsla(0,0%,100%,0.19)]
             hover:bg-white
             disabled:shadow-none disabled:bg-neutral-400 disabled:text-neutral-600 disabled:cursor-not-allowed
             bg-[#E6E6E6] text-[#2F3031] shadow-[0_0_0_2px_rgba(0,0,0,0.5),0_0_14px_0_rgba(255,255,255,0.19),inset_0_-1px_0.4px_0_rgba(0,0,0,0.2),inset_0_1px_0.4px_0_white]
             cursor-pointer`}
-        >
-          Send to Badge
-        </button>
+            >
+              {flashSuccess ? 'Continue' : 'Flash the Firmware'}
+            </button>
+          </div>
+        )}
+
+        {!legacyFirmware && (
+          <>
+            <div>
+              <label className="font-semibold text-lg mb-2 block">Mode</label>
+              <div className="flex gap-2 text-xs">
+                <button
+                  type="button"
+                  className={`cursor-pointer flex-1 px-3 py-2 rounded-lg border outline-none transition ${choice === '1'
+                    ? 'bg-lime-600 text-white border-lime-600'
+                    : 'bg-[#232526] text-white border-[#444] hover:bg-[#282a2c]'
+                    }`}
+                  onClick={() => setChoice('1')}
+                >
+                  Swirl
+                </button>
+                <button
+                  type="button"
+                  className={`cursor-pointer flex-1 px-3 py-2 rounded-lg border outline-none transition ${choice === '2'
+                    ? 'bg-lime-600 text-white border-lime-600'
+                    : 'bg-[#232526] text-white border-[#444] hover:bg-[#282a2c]'
+                    }`}
+                  onClick={() => setChoice('2')}
+                >
+                  Scrolling&nbsp;Text
+                </button>
+                <button
+                  type="button"
+                  className={`cursor-pointer flex-1 px-3 py-2 rounded-lg border outline-none transition ${choice === '3'
+                    ? 'bg-lime-600 text-white border-lime-600'
+                    : 'bg-[#232526] text-white border-[#444] hover:bg-[#282a2c]'
+                    }`}
+                  onClick={() => setChoice('3')}
+                >
+                  Photo
+                </button>
+                <button
+                  type="button"
+                  className={`cursor-pointer flex-1 px-3 py-2 rounded-lg border outline-none transition ${choice === '4'
+                    ? 'bg-lime-600 text-white border-lime-600'
+                    : 'bg-[#232526] text-white border-[#444] hover:bg-[#282a2c]'
+                    }`}
+                  onClick={() => setChoice('4')}
+                >
+                  Video
+                </button>
+              </div>
+            </div>
+            {choice === '2' && (
+              <div className="flex flex-col gap-3">
+                <label className="font-medium">Text</label>
+                <input
+                  value={text}
+                  onChange={e => setText(e.target.value)}
+                  placeholder="Text"
+                  className="px-3 py-2 rounded-lg border border-[#444] bg-[#232526] text-white text-base outline-none"
+                />
+                <div className="flex gap-3">
+                  <div>
+                    <label className="text-xs font-medium">Foreground</label>
+                    <div
+                      className="inline-block ml-2 w-4 h-4 rounded-full border border-white/30 cursor-pointer align-middle"
+                      style={{ backgroundColor: fg }}
+                      onClick={() => {
+                        const input = document.getElementById('fg-color-input');
+                        if (input) (input as HTMLInputElement).click();
+                      }}
+                      title="Change text color"
+                    />
+                    <input
+                      id="fg-color-input"
+                      type="color"
+                      value={fg}
+                      onChange={e => setFg(e.target.value)}
+                      className="hidden"
+                      tabIndex={-1}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium">Background</label>
+                    <div
+                      className="inline-block ml-2 w-4 h-4 rounded-full border border-white/30 cursor-pointer align-middle"
+                      style={{ backgroundColor: bg }}
+                      onClick={() => {
+                        const input = document.getElementById('bg-color-input');
+                        if (input) (input as HTMLInputElement).click();
+                      }}
+                      title="Change background color"
+                    />
+                    <input
+                      id="bg-color-input"
+                      type="color"
+                      value={bg}
+                      onChange={e => setBg(e.target.value)}
+                      className="hidden"
+                      tabIndex={-1}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+            {choice === '3' && (
+              <div
+                className="flex flex-col gap-1"
+                onDragOver={e => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onDrop={e => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    setPhotoFile(e.dataTransfer.files[0]);
+                  }
+                }}
+              >
+                <label className="font-medium">Photo</label>
+                <label
+                  htmlFor="photo-upload"
+                  className="mt-2 flex items-center justify-center border border-dashed border-[#444] rounded-lg py-6 bg-[#232526] text-white cursor-pointer transition hover:bg-[#282a2c] text-center"
+                  style={{ minHeight: 80 }}
+                >
+                  {photoFile ? (
+                    <span className="truncate w-full px-4">{photoFile.name}</span>
+                  ) : (
+                    <span>Select the photo or drop it here</span>
+                  )}
+                </label>
+                <input
+                  id="photo-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={e => setPhotoFile(e.target.files![0])}
+                  className="hidden"
+                />
+              </div>
+            )}
+            {choice === '4' && (
+              <div
+                className="flex flex-col gap-1"
+                onDragOver={e => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onDrop={e => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    setVideoFile(e.dataTransfer.files[0]);
+                  }
+                }}
+              >
+                <label className="font-medium">Video</label>
+                <label
+                  htmlFor="video-upload"
+                  className="mt-2 flex items-center justify-center border border-dashed border-[#444] rounded-lg py-6 bg-[#232526] text-white cursor-pointer transition hover:bg-[#282a2c] text-center"
+                  style={{ minHeight: 80 }}
+                >
+                  {videoFile ? (
+                    <span className="truncate w-full px-4">{videoFile.name}</span>
+                  ) : (
+                    <span>Select the video or drop it here</span>
+                  )}
+                </label>
+                <input
+                  id="video-upload"
+                  type="file"
+                  accept="video/*"
+                  onChange={e => setVideoFile(e.target.files![0])}
+                  className="hidden"
+                />
+              </div>
+            )}
+            {loadingProgress > 0 && loadingProgress < 100 && (
+              <div className="w-full flex flex-col gap-1">
+                <div className="text-xs text-white/70 font-medium">Loading: {loadingProgress}%</div>
+                <div className="w-full h-2 bg-[#222] rounded">
+                  <div
+                    className="h-2 bg-blue-500 rounded transition-all"
+                    style={{ width: `${loadingProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+            {loadingProgress === -1 && (
+              <div className="w-full flex flex-col gap-1 items-center">
+                <div className="text-xs text-white/70 font-medium mb-1">Doing ffmpeg magic...</div>
+                <div className="w-full h-2 bg-[#222] rounded overflow-hidden relative">
+                  <div
+                    className="absolute h-2 bg-blue-500 rounded"
+                    style={{
+                      width: '30%',
+                      left: 0,
+                      animation: 'bounce-loading 1.2s cubic-bezier(.4,0,.2,1) infinite'
+                    }}
+                  />
+                </div>
+                <style>{`
+              @keyframes bounce-loading {
+              0% { left: 0; }
+              50% { left: 70%; }
+              100% { left: 0; }
+              }
+            `}</style>
+              </div>
+            )}
+            <button
+              onClick={sendToBadge}
+              disabled={!badgeConnected}
+              className={`flex flex-row gap-2 items-center justify-center min-h-9 px-3 py-2 text-sm font-medium font-inter leading-4 tracking-wide whitespace-nowrap border-none rounded-lg transition
+            active:shadow-[inset_0_-1px_0.4px_0_rgba(0,0,0,0.2),inset_0_1px_0.4px_0_#fff,0_0_0_2px_rgba(0,0,0,0.5),0_0_14px_0_hsla(0,0%,100%,0.19)]
+            hover:shadow-[inset_0_-1px_0.4px_0_rgba(0,0,0,0.2),inset_0_1px_0.4px_0_#fff,0_0_0_2px_rgba(0,0,0,0.5),0_0_14px_0_hsla(0,0%,100%,0.19)]
+            hover:bg-white
+            disabled:shadow-none disabled:bg-neutral-400 disabled:text-neutral-600 disabled:cursor-not-allowed
+            bg-[#E6E6E6] text-[#2F3031] shadow-[0_0_0_2px_rgba(0,0,0,0.5),0_0_14px_0_rgba(255,255,255,0.19),inset_0_-1px_0.4px_0_rgba(0,0,0,0.2),inset_0_1px_0.4px_0_white]
+            cursor-pointer`}
+            >
+              {badgeConnected ? 'Send to Badge' : 'Badge not connected'}
+            </button>
+          </>
+        )}
       </div>
       <div
         className="relative cursor-pointer"
@@ -1180,14 +893,12 @@ export default function Page() {
                 width: 13.5,
                 height: 13.5,
                 borderRadius: 4,
-                backgroundImage: `
-                radial-gradient(circle at center, rgba(255,255,255,0.3) 0%, rgba(0,0,0,0.3) 100%),
-                linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.1))
-              `,
+                backgroundImage: `radial-gradient(circle at center, rgba(255,255,255,0.3) 0%, rgba(0,0,0,0.3) 100%), linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.1))`,
                 backgroundColor: `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`,
                 backgroundBlendMode: 'overlay, darken',
                 boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
                 transition: 'background 0.02s',
+                filter: 'blur(0.5px)'
               }}
             />
           ))}
