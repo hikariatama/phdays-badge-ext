@@ -452,11 +452,11 @@ export default function Page() {
     setFlashConnecting(true);
     try {
       const serialLib = !navigator.serial && navigator.usb ? serial : navigator.serial;
-      const portFilters: { usbVendorId?: number, usbProductId?: number }[] = [
+      const portFilters: SerialPortFilter[] = [
         { usbProductId: 29987, usbVendorId: 6790 }
       ];
 
-      const port = await serialLib.requestPort({ filters: portFilters });
+      const port = await serialLib.requestPort({ filters: portFilters }) as SerialPort;
       const transport = new Transport(port, true);
 
       const loaderOptions = {
@@ -520,7 +520,7 @@ export default function Page() {
         flashFreq: "80m",
         eraseAll: true,
         compress: true,
-        reportProgress: (fileIndex, written, total) => {
+        reportProgress: (_fileIndex, written, total) => {
           const percent = ((written / total) * 100).toFixed(1);
           setFlashProgress(parseFloat(percent));
         }
