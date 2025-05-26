@@ -259,12 +259,6 @@ export default function Page() {
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
 
   useEffect(() => {
-    if (window.location.protocol === 'https:') {
-      window.location.href = window.location.href.replace('https:', 'http:');
-    }
-  }, []);
-
-  useEffect(() => {
     navigator.serviceWorker.register('/service-worker.js')
     .then(() => console.log('✅ Service worker registered'))
     .catch((err) => console.error('❌ Service worker error:', err));
