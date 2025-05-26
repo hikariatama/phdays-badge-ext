@@ -7,10 +7,10 @@ import { serial } from "web-serial-polyfill";
 type Color = [number, number, number];
 type Grid = Color[][];
 
-const disconnectedFrames = [[[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [68, 73, 247], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [68, 74, 247], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0], [255, 255, 254], [0, 0, 0], [0, 0, 0], [255, 254, 254], [0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0], [254, 254, 255], [254, 254, 254], [255, 255, 255], [254, 255, 254], [0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [255, 254, 254], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [254, 254, 255], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]];
+const disconnectedFrames: Grid = [[[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [68, 73, 247], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [68, 74, 247], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0], [255, 255, 254], [0, 0, 0], [0, 0, 0], [255, 254, 254], [0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0], [254, 254, 255], [254, 254, 254], [255, 255, 255], [254, 255, 254], [0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [255, 254, 254], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [254, 254, 255], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]];
 
 interface FrameGenerator {
-  init?(setLoadingProgress: (percentage: number) => void): Promise<void>;
+  init?(setLoadingProgress: (percentage: number) => void, setAudioBlob?: (blob: Blob | null) => void): Promise<void>;
   frameCount: number;
   fps: number;
   generate(t: number): Grid;
@@ -167,7 +167,7 @@ export class VideoFrameGenerator implements FrameGenerator {
     this.file = file;
   }
 
-  async init(setLoadingProgress: (percentage: number) => void): Promise<void> {
+  async init(setLoadingProgress: (percentage: number) => void, setAudioBlob: (blob: Blob | null) => void): Promise<void> {
     if (!this.ffmpeg.loaded) await this.ffmpeg.load();
 
     this.ffmpeg.createDir('/frames');
@@ -222,6 +222,22 @@ export class VideoFrameGenerator implements FrameGenerator {
       setLoadingProgress(Math.round((i + 1) / files.length * 100));
     }
 
+    const audioPattern = '/frames/audio.mp3';
+    await this.ffmpeg.exec([
+      '-i', name,
+      '-vn',
+      '-acodec', 'libmp3lame',
+      audioPattern
+    ]);
+
+    const audioData = await this.ffmpeg.readFile(audioPattern);
+    if (audioData) {
+      setAudioBlob(new Blob([audioData], { type: 'audio/mpeg' }));
+    } else {
+      setAudioBlob(null);
+    }
+    console.log("Audio extracted");
+
     setLoadingProgress(0);
   }
 
@@ -239,6 +255,7 @@ export default function Page() {
   const [bg, setBgInternal] = useState<string>('#000000');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [generator, setGenerator] = useState<FrameGenerator | null>(null);
   const [frames, setFrames] = useState<Grid[]>([]);
   const [previewIndex, setPreviewIndex] = useState<number>(0);
@@ -254,6 +271,7 @@ export default function Page() {
   const [flashProgress, setFlashProgress] = useState<number>(0);
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [showInstructions, setShowInstructions] = useState<boolean>(false);
+  const [pausePreview, setPausePreview] = useState<boolean>(false);
 
   useEffect(() => {
     const hideInstructions = window.localStorage.getItem('hideInstructions');
@@ -273,6 +291,11 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
+    if (isStreaming) {
+      setBadgeConnected(true);
+      return;
+    }
+
     let inProgress = false;
 
     async function checkLegacyFirmware() {
@@ -322,7 +345,7 @@ export default function Page() {
     checkConnection();
     const interval = window.setInterval(checkConnection, 1000);
     return () => clearInterval(interval);
-  }, [legacyFirmware]);
+  }, [legacyFirmware, isStreaming]);
 
   const setChoice = (value: string) => {
     window.localStorage.setItem('choice', value);
@@ -397,9 +420,21 @@ export default function Page() {
     return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
   }
 
+  useEffect(() => {
+    if (!isStreaming && badgeConnected) {
+      const data = gridsToBinary([disconnectedFrames], 1);
+      fetch('http://192.168.4.1/api/v1/led/picture', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: data
+      }).catch(e => console.error('Error sending disconnected frame to badge', e));
+    }
+  }, [isStreaming, badgeConnected]);
+
   const loadGenerator = useCallback(async () => {
     console.log('Loading generator', choice, text, fg, bg, photoFile, videoFile);
     let gen: FrameGenerator;
+    setIsStreaming(false);
     if (choice === '1') gen = new SwirlGenerator();
     else if (choice === '2') gen = new RunningTextGenerator(text, hexToRgb(fg), hexToRgb(bg));
     else if (choice === '3') {
@@ -410,7 +445,13 @@ export default function Page() {
     } else {
       if (!videoFile) return;
       const vg = new VideoFrameGenerator(videoFile);
-      await vg.init(setLoadingProgress);
+      setPausePreview(true);
+      setAudioBlob(null);
+      try {
+        await vg.init(setLoadingProgress, setAudioBlob);
+      } finally {
+        setPausePreview(false);
+      }
       gen = vg;
     }
     setGenerator(gen);
@@ -419,18 +460,35 @@ export default function Page() {
     for (let i = 0; i < total; i++) list.push(gen.generate(i));
     setFrames(list);
     setPreviewIndex(0);
+  }, [choice, text, fg, bg, photoFile, videoFile]);
 
-    function startPreview() {
-      if (!gen) return;
-      const fps = gen.fps;
-      stopPreview();
-      intervalRef.current = window.setInterval(() => {
-        setPreviewIndex(i => (i + 1) % list.length);
-      }, 1000 / fps);
+  useEffect(() => {
+    if (!generator || frames.length === 0) return;
+    stopPreview();
+    intervalRef.current = window.setInterval(() => {
+      if (!pausePreview) setPreviewIndex(i => (i + 1) % frames.length);
+    }, 1000 / generator.fps);
+  }, [generator, frames.length, pausePreview]);
+
+  useEffect(() => {
+    if (!isStreaming) return;
+    let audio: HTMLAudioElement | null = null;
+
+    if (choice === '4' && audioBlob) {
+      audio = new Audio(URL.createObjectURL(audioBlob));
+      audio.loop = true;
+      audio.play().catch(e => console.error('Error playing audio', e));
     }
 
-    setTimeout(() => startPreview(), 0);
-  }, [choice, text, fg, bg, photoFile, videoFile]);
+    return () => {
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.src = '';
+        audio = null;
+      }
+    };
+  }, [choice, audioBlob, isStreaming]);
 
   useEffect(() => {
     loadGenerator();
