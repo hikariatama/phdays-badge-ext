@@ -253,11 +253,47 @@ export default function Page() {
   const [flashSuccess, setFlashSuccess] = useState<boolean>(false);
   const [flashProgress, setFlashProgress] = useState<number>(0);
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
+  const serviceWorkerCachingDone = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
-    navigator.serviceWorker.register('/service-worker.js')
-    .then(() => console.log('✅ Service worker registered'))
-    .catch((err) => console.error('❌ Service worker error:', err));
+    serviceWorkerCachingDone.current = new Promise<void>((resolve) => {
+      if (!('serviceWorker' in navigator)) {
+        resolve();
+        return;
+      }
+      navigator.serviceWorker.register('/service-worker.js')
+        .then(() => {
+          // Listen for the controllerchange event to know when the new SW is controlling the page
+          if (navigator.serviceWorker.controller) {
+            // Already controlled, but we want to wait for caching
+            // Listen for a custom message from the SW when caching is done
+            function onMessage(event: MessageEvent) {
+              if (event.data === 'CACHE_DONE') {
+                navigator.serviceWorker.removeEventListener('message', onMessage);
+                resolve();
+              }
+            }
+            navigator.serviceWorker.addEventListener('message', onMessage);
+          } else {
+            // Wait for controllerchange, then listen for CACHE_DONE
+            function onControllerChange() {
+              navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+              function onMessage(event: MessageEvent) {
+                if (event.data === 'CACHE_DONE') {
+                  navigator.serviceWorker.removeEventListener('message', onMessage);
+                  resolve();
+                }
+              }
+              navigator.serviceWorker.addEventListener('message', onMessage);
+            }
+            navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+          }
+        })
+        .catch((err) => {
+          console.error('❌ Service worker error:', err);
+          resolve();
+        });
+    });
   }, []);
 
   useEffect(() => {
@@ -280,11 +316,14 @@ export default function Page() {
       }
     }
 
-
     async function checkConnection() {
       if (inProgress) return;
       inProgress = true;
       try {
+        // Wait for service worker caching to finish before pinging
+        if (serviceWorkerCachingDone.current) {
+          await serviceWorkerCachingDone.current;
+        }
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 3000);
         const res = await fetch('http://192.168.4.1/api/v1/ping', {
@@ -297,7 +336,7 @@ export default function Page() {
         if (res.status === 200) {
           setBadgeConnected(true);
           setLegacyFirmware(false);
-          return
+          return;
         }
       } catch {
         setBadgeConnected(false);

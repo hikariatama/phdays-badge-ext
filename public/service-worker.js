@@ -34,9 +34,21 @@ async function cacheAllFiles() {
     await cache.addAll(filesToCache);
 }
 
+async function notifyClientsCacheDone() {
+    const clientsList = await self.clients.matchAll();
+    for (const client of clientsList) {
+        client.postMessage('CACHE_DONE');
+    }
+}
+
 self.addEventListener('install', (event) => {
     self.skipWaiting();
-    event.waitUntil(cacheAllFiles());
+    event.waitUntil(
+        (async () => {
+            await cacheAllFiles();
+            await notifyClientsCacheDone();
+        })()
+    );
 });
 
 self.addEventListener('activate', (event) => {
@@ -74,6 +86,9 @@ self.addEventListener('fetch', event => {
 
 self.addEventListener('message', event => {
     if (event.data === 'cacheAllFiles') {
-        cacheAllFiles();
+        (async () => {
+            await cacheAllFiles();
+            await notifyClientsCacheDone();
+        })();
     }
 });
