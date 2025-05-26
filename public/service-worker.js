@@ -52,20 +52,24 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
-self.addEventListener('fetch', async (event) => {
-    try {
-        const response = await fetch(event.request);
+self.addEventListener('fetch', (event) => {
+    event.respondWith(
+        (async () => {
+            try {
+                const response = await fetch(event.request);
 
-        const cache = await caches.open(CACHE_NAME);
-        cache.put(event.request, response.clone());
+                const cache = await caches.open(CACHE_NAME);
+                cache.put(event.request, response.clone());
 
-        return event.respondWith(response);
-    } catch (error) {
-        const cachedResponse = await caches.match(event.request);
-        if (cachedResponse) {
-            return event.respondWith(cachedResponse);
-        }
-    }
+                return response;
+            } catch (error) {
+                const cachedResponse = await caches.match(event.request);
+                if (cachedResponse) {
+                    return cachedResponse;
+                }
+            }
+        })()
+    );
 });
 
 self.addEventListener('message', event => {
