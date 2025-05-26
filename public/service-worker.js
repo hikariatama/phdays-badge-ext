@@ -30,19 +30,13 @@ async function cacheAllFiles() {
     const assets = await getFilesFromAutoindex('/assets/');
     filesToCache = filesToCache.concat(fonts, assets);
 
-    console.log('Caching files:', filesToCache);
-
     const cache = await caches.open(CACHE_NAME);
     await cache.addAll(filesToCache);
 }
 
 self.addEventListener('install', (event) => {
     self.skipWaiting();
-    event.waitUntil(
-        (async () => {
-            await cacheAllFiles();
-        })()
-    );
+    event.waitUntil(cacheAllFiles());
 });
 
 self.addEventListener('activate', (event) => {
@@ -58,37 +52,24 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
-self.addEventListener('fetch', event => {
-    event.respondWith(
-        (async () => {
-            try {
-                const response = await fetch(event.request);
+self.addEventListener('fetch', async (event) => {
+    try {
+        const response = await fetch(event.request);
 
-                if (response && response.ok) {
-                    const cache = await caches.open(CACHE_NAME);
-                    cache.put(event.request, response.clone());
-                    return response;
-                } else {
-                    const cachedResponse = await caches.match(event.request);
-                    if (cachedResponse) {
-                        return cachedResponse;
-                    }
-                }
-            } catch (error) {
-                const cachedResponse = await caches.match(event.request);
-                if (cachedResponse) {
-                    return cachedResponse;
-                }
-            }
-            return new Response('Network error occurred', { status: 408, statusText: 'Network Error' });
-        })()
-    );
+        const cache = await caches.open(CACHE_NAME);
+        cache.put(event.request, response.clone());
+
+        return event.respondWith(response);
+    } catch (error) {
+        const cachedResponse = await caches.match(event.request);
+        if (cachedResponse) {
+            return event.respondWith(cachedResponse);
+        }
+    }
 });
 
 self.addEventListener('message', event => {
     if (event.data === 'cacheAllFiles') {
-        (async () => {
-            await cacheAllFiles();
-        })();
+        cacheAllFiles();
     }
 });
