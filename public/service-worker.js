@@ -53,6 +53,9 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+    if (event.request.url.startsWith("http://192.168.4.1")) {
+        return;
+    }
     event.respondWith(
         (async () => {
             try {
