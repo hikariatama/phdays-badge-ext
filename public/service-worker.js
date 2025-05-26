@@ -45,9 +45,9 @@ const FILES_TO_CACHE = [
     './fonts/InterDisplay-MediumItalic.woff2',
     './fonts/Inter-SemiBoldItalic.woff2',
     './fonts/Inter-BlackItalic.woff2',
-    './src/ffmpeg/core.js',
-    './src/ffmpeg/core.wasm',
-    './src/ffmpeg/core.worker.js',
+    'https://unpkg.com/@ffmpeg/core@0.12.9/dist/esm/ffmpeg-core.js',
+    'https://unpkg.com/@ffmpeg/core@0.12.9/dist/esm/ffmpeg-core.wasm',
+    'wget https://unpkg.com/@ffmpeg/core-mt@0.12.9/dist/umd/ffmpeg-core.worker.js',
 ];
 
 self.addEventListener('install', (event) => {

@@ -168,11 +168,7 @@ export class VideoFrameGenerator implements FrameGenerator {
   }
 
   async init(setLoadingProgress: (percentage: number) => void): Promise<void> {
-    if (!this.ffmpeg.loaded) await this.ffmpeg.load({
-      coreURL: '/src/ffmpeg/core.js',
-      wasmURL: '/src/ffmpeg/core.wasm',
-      workerURL: '/src/ffmpeg/core.worker.js',
-    });
+    if (!this.ffmpeg.loaded) await this.ffmpeg.load();
 
     this.ffmpeg.createDir('/frames');
     const name = '/frames/input.mp4';
