@@ -30,6 +30,8 @@ async function cacheAllFiles() {
     const assets = await getFilesFromAutoindex('/assets/');
     filesToCache = filesToCache.concat(fonts, assets);
 
+    console.log('Caching files:', filesToCache);
+
     const cache = await caches.open(CACHE_NAME);
     await cache.addAll(filesToCache);
 }
