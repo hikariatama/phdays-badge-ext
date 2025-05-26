@@ -253,7 +253,15 @@ export default function Page() {
   const [flashSuccess, setFlashSuccess] = useState<boolean>(false);
   const [flashProgress, setFlashProgress] = useState<number>(0);
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
+  const [showInstructions, setShowInstructions] = useState<boolean>(false);
   const serviceWorkerCachingDone = useRef<Promise<void> | null>(null);
+
+  useEffect(() => {
+    const hideInstructions = window.localStorage.getItem('hideInstructions');
+    if (!hideInstructions) {
+      setShowInstructions(true);
+    }
+  }, []);
 
   useEffect(() => {
     serviceWorkerCachingDone.current = new Promise<void>((resolve) => {
@@ -614,7 +622,49 @@ export default function Page() {
   return (
     <div className="min-h-screen w-screen bg-[#111] flex items-center justify-center font-sans text-white gap-16 flex-col md:flex-row px-4 md:px-0">
       <div className="rounded-2xl p-8 min-w-[320px] text-sm flex flex-col gap-6 bg-gradient-to-br from-[#111214] to-[#0c0d0f] border-t border-r border-l border-white/5 shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.1),0_2px_40px_10px_rgba(154,170,255,0.05),0_0_16px_-7px_rgba(154,170,255,0.05)] w-full md:w-auto">
-        {legacyFirmware && (
+        {showInstructions && (
+          <div>
+            <div className="text-lg font-semibold mb-2">Important</div>
+            <div className="mb-2">In order to allow this website to connect to your badge, follow these steps:</div>
+            <ol className="list-decimal list-inside text-sm text-white/70 mb-4">
+              <li className="mb-2">Open <code className="bg-neutral-800 px-1 py-0.5 rounded cursor-pointer hover:bg-neutral-700 active:bg-neutral-900 transition-colors" onClick={() => navigator.clipboard.writeText('chrome://flags/#unsafely-treat-insecure-origin-as-secure')}>chrome://flags/#unsafely-treat-insecure-origin-as-secure</code></li>
+              <li className="mb-2">Add <code className="bg-neutral-800 px-1 py-0.5 rounded cursor-pointer hover:bg-neutral-700 active:bg-neutral-900 transition-colors" onClick={() => navigator.clipboard.writeText('http://192.168.4.1')}>http://192.168.4.1</code> to the list of allowed insecure origins.</li>
+              <li className="mb-2">Change the state to <div className="bg-[#8ab4f8] text-[#202124] inline-block px-4 py-0.5 cursor-default select-none">Enabled</div></li>
+              <li>Restart the browser</li>
+            </ol>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setShowInstructions(false)}
+                className={`flex flex-row gap-2 items-center justify-center min-h-9 px-3 py-2 text-sm font-medium font-inter leading-4 tracking-wide whitespace-nowrap border-none rounded-lg transition
+            active:shadow-[inset_0_-1px_0.4px_0_rgba(0,0,0,0.2),inset_0_1px_0.4px_0_#fff,0_0_0_2px_rgba(0,0,0,0.5),0_0_14px_0_hsla(0,0%,100%,0.19)]
+            hover:shadow-[inset_0_-1px_0.4px_0_rgba(0,0,0,0.2),inset_0_1px_0.4px_0_#fff,0_0_0_2px_rgba(0,0,0,0.5),0_0_14px_0_hsla(0,0%,100%,0.19)]
+            hover:bg-white
+            disabled:shadow-none disabled:bg-neutral-400 disabled:text-neutral-600 disabled:cursor-not-allowed
+            bg-[#E6E6E6] text-[#2F3031] shadow-[0_0_0_2px_rgba(0,0,0,0.5),0_0_14px_0_rgba(255,255,255,0.19),inset_0_-1px_0.4px_0_rgba(0,0,0,0.2),inset_0_1px_0.4px_0_white]
+            cursor-pointer`}
+              >
+                Ok
+              </button>
+              <button
+                onClick={() => {
+                  setShowInstructions(false);
+                  window.localStorage.setItem('hideInstructions', 'true');
+                }}
+                className={`flex flex-row gap-2 items-center justify-center min-h-9 px-3 py-2 text-sm font-medium font-inter leading-4 tracking-wide whitespace-nowrap border-none rounded-lg transition
+            active:shadow-[inset_0_-1px_0.4px_0_rgba(0,0,0,0.2),inset_0_1px_0.4px_0_#fff,0_0_0_2px_rgba(0,0,0,0.5),0_0_14px_0_hsla(0,0%,100%,0.19)]
+            hover:shadow-[inset_0_-1px_0.4px_0_rgba(0,0,0,0.2),inset_0_1px_0.4px_0_#fff,0_0_0_2px_rgba(0,0,0,0.5),0_0_14px_0_hsla(0,0%,100%,0.19)]
+            hover:bg-white
+            disabled:shadow-none disabled:bg-neutral-400 disabled:text-neutral-600 disabled:cursor-not-allowed
+            bg-[#E6E6E6] text-[#2F3031] shadow-[0_0_0_2px_rgba(0,0,0,0.5),0_0_14px_0_rgba(255,255,255,0.19),inset_0_-1px_0.4px_0_rgba(0,0,0,0.2),inset_0_1px_0.4px_0_white]
+            cursor-pointer`}
+              >
+                Don't show again
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!showInstructions && legacyFirmware && (
           <div>
             <div className="text-lg font-semibold mb-2">Legacy Firmware Detected</div>
             <div className="text-sm text-white/70 mb-4">
@@ -700,7 +750,7 @@ export default function Page() {
           </div>
         )}
 
-        {!legacyFirmware && (
+        {!showInstructions && !legacyFirmware && (
           <>
             <div>
               <label className="font-semibold text-lg mb-2 block">Mode</label>
@@ -924,55 +974,57 @@ export default function Page() {
           </>
         )}
       </div>
-      <div
-        className="relative cursor-pointer"
-        style={{
-          backgroundImage: badgeColor ? 'url(/badge_white.png)' : 'url(/badge_red.png)',
-          width: 229,
-          height: 342,
-          backgroundPosition: 'center',
-          backgroundSize: 'cover',
-          filter: badgeConnected ? 'none' : 'grayscale(1) brightness(0.5)',
-        }}
-        onClick={() => setBadgeColor(!badgeColor)}
-      >
+      {!showInstructions && (
         <div
-          className="grid"
+          className="relative cursor-pointer"
           style={{
-            gridTemplateColumns: 'repeat(10, 13.5px)',
-            gridTemplateRows: 'repeat(10, 13.5px)',
-            gap: 3,
-            background: '#000',
-            width: 'fit-content',
-            marginTop: 84,
-            marginLeft: 20,
-            padding: 4,
-            paddingTop: 5.5,
-            paddingBottom: 5.5,
-            transform: 'skewX(-5.976deg)',
-            borderRadius: 4,
-            boxShadow: '0 2px 12px rgba(0,0,0,0.18)',
+            backgroundImage: badgeColor ? 'url(/badge_white.png)' : 'url(/badge_red.png)',
+            width: 229,
+            height: 342,
+            backgroundPosition: 'center',
+            backgroundSize: 'cover',
+            filter: badgeConnected ? 'none' : 'grayscale(1) brightness(0.5)',
           }}
+          onClick={() => setBadgeColor(!badgeColor)}
         >
-          {(!badgeConnected || frames.length > 0 && frames[previewIndex]) && (badgeConnected ? frames[previewIndex] : disconnectedFrames).flat().map((pixel, i) => (
-            <div
-              key={i}
-              className="rounded bg-black transition"
-              style={{
-                width: 13.5,
-                height: 13.5,
-                borderRadius: 4,
-                backgroundImage: `radial-gradient(circle at center, rgba(255,255,255,0.3) 0%, rgba(0,0,0,0.3) 100%), linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.1))`,
-                backgroundColor: `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`,
-                backgroundBlendMode: 'overlay, darken',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
-                transition: 'background 0.02s',
-                filter: 'blur(0.5px)'
-              }}
-            />
-          ))}
+          <div
+            className="grid"
+            style={{
+              gridTemplateColumns: 'repeat(10, 13.5px)',
+              gridTemplateRows: 'repeat(10, 13.5px)',
+              gap: 3,
+              background: '#000',
+              width: 'fit-content',
+              marginTop: 84,
+              marginLeft: 20,
+              padding: 4,
+              paddingTop: 5.5,
+              paddingBottom: 5.5,
+              transform: 'skewX(-5.976deg)',
+              borderRadius: 4,
+              boxShadow: '0 2px 12px rgba(0,0,0,0.18)',
+            }}
+          >
+            {(!badgeConnected || frames.length > 0 && frames[previewIndex]) && (badgeConnected ? frames[previewIndex] : disconnectedFrames).flat().map((pixel, i) => (
+              <div
+                key={i}
+                className="rounded bg-black transition"
+                style={{
+                  width: 13.5,
+                  height: 13.5,
+                  borderRadius: 4,
+                  backgroundImage: `radial-gradient(circle at center, rgba(255,255,255,0.3) 0%, rgba(0,0,0,0.3) 100%), linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.1))`,
+                  backgroundColor: `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`,
+                  backgroundBlendMode: 'overlay, darken',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
+                  transition: 'background 0.02s',
+                  filter: 'blur(0.5px)'
+                }}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
