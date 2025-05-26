@@ -24,19 +24,18 @@ async function getFilesFromAutoindex(path) {
     }
 }
 
+async function cacheAllFiles() {
+    let filesToCache = [...FILES_TO_CACHE];
+    const fonts = await getFilesFromAutoindex('/fonts/');
+    const assets = await getFilesFromAutoindex('/assets/');
+    filesToCache = filesToCache.concat(fonts, assets);
+
+    const cache = await caches.open(CACHE_NAME);
+    await cache.addAll(filesToCache);
+}
+
 self.addEventListener('install', (event) => {
     self.skipWaiting();
-    event.waitUntil(
-        (async () => {
-            let filesToCache = [...FILES_TO_CACHE];
-            const fonts = await getFilesFromAutoindex('/fonts/');
-            const assets = await getFilesFromAutoindex('/assets/');
-            filesToCache = filesToCache.concat(fonts, assets);
-
-            const cache = await caches.open(CACHE_NAME);
-            await cache.addAll(filesToCache);
-        })()
-    );
 });
 
 self.addEventListener('activate', (event) => {
@@ -70,4 +69,10 @@ self.addEventListener('fetch', event => {
             }
         })()
     );
+});
+
+self.addEventListener('message', event => {
+    if (event.data === 'cacheAllFiles') {
+        cacheAllFiles();
+    }
 });
