@@ -64,16 +64,23 @@ self.addEventListener('fetch', event => {
             try {
                 const response = await fetch(event.request);
 
-                const cache = await caches.open(CACHE_NAME);
-                cache.put(event.request, response.clone());
-
-                return response;
+                if (response && response.ok) {
+                    const cache = await caches.open(CACHE_NAME);
+                    cache.put(event.request, response.clone());
+                    return response;
+                } else {
+                    const cachedResponse = await caches.match(event.request);
+                    if (cachedResponse) {
+                        return cachedResponse;
+                    }
+                }
             } catch (error) {
                 const cachedResponse = await caches.match(event.request);
                 if (cachedResponse) {
                     return cachedResponse;
                 }
             }
+            return new Response('Network error occurred', { status: 408, statusText: 'Network Error' });
         })()
     );
 });
