@@ -36,6 +36,7 @@ async function cacheAllFiles() {
 
 self.addEventListener('install', (event) => {
     self.skipWaiting();
+    event.waitUntil(cacheAllFiles());
 });
 
 self.addEventListener('activate', (event) => {
