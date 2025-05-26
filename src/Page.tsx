@@ -168,7 +168,12 @@ export class VideoFrameGenerator implements FrameGenerator {
   }
 
   async init(setLoadingProgress: (percentage: number) => void): Promise<void> {
-    if (!this.ffmpeg.loaded) await this.ffmpeg.load();
+    if (!this.ffmpeg.loaded) await this.ffmpeg.load({
+      coreURL: '/src/ffmpeg/core.js',
+      wasmURL: '/src/ffmpeg/core.wasm',
+      workerURL: '/src/ffmpeg/core.worker.js',
+    });
+
     this.ffmpeg.createDir('/frames');
     const name = '/frames/input.mp4';
     const framePattern = '/frames/frame_%04d.png';
@@ -251,6 +256,19 @@ export default function Page() {
   const [flashFlashing, setFlashFlashing] = useState<boolean>(false);
   const [flashSuccess, setFlashSuccess] = useState<boolean>(false);
   const [flashProgress, setFlashProgress] = useState<number>(0);
+  const [isStreaming, setIsStreaming] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (window.location.protocol === 'https:') {
+      window.location.href = window.location.href.replace('https:', 'http:');
+    }
+  }, []);
+
+  useEffect(() => {
+    navigator.serviceWorker.register('/service-worker.js')
+    .then(() => console.log('✅ Service worker registered'))
+    .catch((err) => console.error('❌ Service worker error:', err));
+  }, []);
 
   useEffect(() => {
     let inProgress = false;
@@ -366,7 +384,7 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
-    const fontFace = new FontFace('CustomFont', 'url(font.otf)');
+    const fontFace = new FontFace('CustomFont', 'url(/fonts/font.otf)');
     fontFace.load().then(() => {
       document.fonts.add(fontFace);
       console.log('Font loaded');
@@ -435,17 +453,36 @@ export default function Page() {
     if (!generator) return;
     const fps = generator.fps;
     const data = gridsToBinary(frames, fps);
-    try {
-      await fetch('http://192.168.4.1/api/v1/led/picture', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/octet-stream' },
-        body: data
-      });
-    } catch (e) {
-      console.error('Error sending data to badge', e);
+    if (data.length < 32 * 1024) {
+      try {
+        const response = await fetch('http://192.168.4.1/api/v1/led/picture', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/octet-stream' },
+          body: data
+        });
+        if (response.status === 500) {
+          setIsStreaming(true);
+        }
+      } catch (e) {
+        console.error('Error sending data to badge', e);
+      }
+    } else {
+      setIsStreaming(true);
     }
     setPreviewIndex(0);
   }
+
+  useEffect(() => {
+    if (isStreaming && generator) {
+      const data = gridsToBinary([frames[previewIndex]], 1);
+      fetch('http://192.168.4.1/api/v1/led/picture', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: data
+      }).catch(e => console.error('Error sending streaming data to badge', e));
+    }
+  }, [isStreaming, generator, frames, previewIndex]);
+
   async function flashFirmware() {
     if (!legacyFirmware) return;
 
@@ -840,8 +877,8 @@ export default function Page() {
               </div>
             )}
             <button
-              onClick={sendToBadge}
-              disabled={!badgeConnected}
+              onClick={isStreaming ? () => setIsStreaming(false) : sendToBadge}
+              disabled={!isStreaming && !badgeConnected}
               className={`flex flex-row gap-2 items-center justify-center min-h-9 px-3 py-2 text-sm font-medium font-inter leading-4 tracking-wide whitespace-nowrap border-none rounded-lg transition
             active:shadow-[inset_0_-1px_0.4px_0_rgba(0,0,0,0.2),inset_0_1px_0.4px_0_#fff,0_0_0_2px_rgba(0,0,0,0.5),0_0_14px_0_hsla(0,0%,100%,0.19)]
             hover:shadow-[inset_0_-1px_0.4px_0_rgba(0,0,0,0.2),inset_0_1px_0.4px_0_#fff,0_0_0_2px_rgba(0,0,0,0.5),0_0_14px_0_hsla(0,0%,100%,0.19)]
@@ -850,7 +887,10 @@ export default function Page() {
             bg-[#E6E6E6] text-[#2F3031] shadow-[0_0_0_2px_rgba(0,0,0,0.5),0_0_14px_0_rgba(255,255,255,0.19),inset_0_-1px_0.4px_0_rgba(0,0,0,0.2),inset_0_1px_0.4px_0_white]
             cursor-pointer`}
             >
-              {badgeConnected ? 'Send to Badge' : 'Badge not connected'}
+              {isStreaming && (
+                <div className="w-2 h-2 rounded-full bg-red-500" />
+              )}
+              {isStreaming ? 'Stop Streaming' : badgeConnected ? 'Send to Badge' : 'Badge not connected'}
             </button>
           </>
         )}
