@@ -298,23 +298,6 @@ export default function Page() {
 
     let inProgress = false;
 
-    async function checkLegacyFirmware() {
-      try {
-        const res = await fetch('http://192.168.4.1/api/v1/system/info', {
-          method: 'GET',
-          cache: 'no-store',
-          redirect: 'manual',
-        });
-        if (res.status === 200) {
-          setLegacyFirmware(true);
-        }
-        setBadgeConnected(false);
-      } catch (e) {
-        console.error('Error checking legacy firmware', e);
-        setBadgeConnected(false);
-      }
-    }
-
     async function checkConnection() {
       if (inProgress) return;
       inProgress = true;
@@ -335,9 +318,6 @@ export default function Page() {
         }
       } catch {
         setBadgeConnected(false);
-        if (!legacyFirmware) {
-          await checkLegacyFirmware();
-        }
       } finally {
         inProgress = false;
       }
@@ -688,7 +668,7 @@ export default function Page() {
 
         {!showInstructions && legacyFirmware && (
           <div>
-            <div className="text-lg font-semibold mb-2">Legacy Firmware Detected</div>
+            <div className="text-lg font-semibold mb-2">Custom Firmware Installation Wizard</div>
             <div className="text-sm text-white/70 mb-4">
               You will need to install the unofficial firmware to use this website.
             </div>
@@ -992,6 +972,15 @@ export default function Page() {
                 <div className="w-2 h-2 rounded-full bg-red-500" />
               )}
               {isStreaming ? 'Stop Streaming' : badgeConnected ? 'Send to Badge' : 'Badge not connected'}
+            </button>
+            <button onClick={() => setLegacyFirmware(true)} className={`flex flex-row gap-2 items-center justify-center min-h-9 px-3 py-2 text-sm font-medium font-inter leading-4 tracking-wide whitespace-nowrap border-none rounded-lg transition
+            active:shadow-[inset_0_-1px_0.4px_0_rgba(0,0,0,0.2),inset_0_1px_0.4px_0_#fff,0_0_0_2px_rgba(0,0,0,0.5),0_0_14px_0_hsla(0,0%,100%,0.19)]
+            hover:shadow-[inset_0_-1px_0.4px_0_rgba(0,0,0,0.2),inset_0_1px_0.4px_0_#fff,0_0_0_2px_rgba(0,0,0,0.5),0_0_14px_0_hsla(0,0%,100%,0.19)]
+            hover:bg-white
+            disabled:shadow-none disabled:bg-neutral-400 disabled:text-neutral-600 disabled:cursor-not-allowed
+            bg-[#E6E6E6] text-[#2F3031] shadow-[0_0_0_2px_rgba(0,0,0,0.5),0_0_14px_0_rgba(255,255,255,0.19),inset_0_-1px_0.4px_0_rgba(0,0,0,0.2),inset_0_1px_0.4px_0_white]
+            cursor-pointer`}>
+              I need custom firmware
             </button>
           </>
         )}
